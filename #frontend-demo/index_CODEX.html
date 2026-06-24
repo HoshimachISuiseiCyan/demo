@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Denpa AI Learning MVP</title>
+  <style>
+    body { font-family: "Microsoft YaHei", sans-serif; max-width: 900px; margin: 24px auto; padding: 0 16px; }
+    textarea { width: 100%; min-height: 180px; }
+    button { margin-top: 8px; padding: 8px 14px; cursor: pointer; }
+    .card { border: 1px solid #ddd; border-radius: 10px; padding: 12px; margin: 16px 0; }
+    .muted { color: #666; font-size: 13px; }
+    .opt { display: block; margin: 4px 0; }
+    input[type="text"] { width: 260px; padding: 6px; }
+  </style>
+</head>
+<body>
+  <h1>Denpa AI 学习系统（MVP）</h1>
+
+  <div class="card">
+    <h3>1) 上传学习材料</h3>
+    <textarea id="sourceText" placeholder="粘贴原始学习文本..."></textarea>
+    <br />
+    <button onclick="uploadText()">抽取知识点</button>
+    <pre id="uploadResult" class="muted"></pre>
+  </div>
+
+  <div class="card">
+    <h3>2) 获取自适应题目</h3>
+    <label>用户ID：<input id="userId" type="text" value="user_001" /></label>
+    <button onclick="loadQuestion()">获取题目</button>
+    <div id="questionArea"></div>
+  </div>
+
+  <script>
+    const API_BASE = "http://127.0.0.1:8000";
+    let currentQuestion = null;
+
+    async function uploadText() {
+      const text = document.getElementById("sourceText").value.trim();
+      if (!text) return alert("请先输入文本");
+      const res = await fetch(`${API_BASE}/upload`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text })
+      });
+      const data = await res.json();
+      document.getElementById("uploadResult").textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function loadQuestion() {
+      const userId = document.getElementById("userId").value.trim();
+      const res = await fetch(`${API_BASE}/questions?user_id=${encodeURIComponent(userId)}&limit=1`);
+      const data = await res.json();
+      if (!data.questions || !data.questions.length) {
+        document.getElementById("questionArea").innerHTML = "<p>暂无题目，请先上传文本。</p>";
+        return;
+      }
+
+      currentQuestion = data.questions[0];
+      const q = currentQuestion;
+      document.getElementById("questionArea").innerHTML = `
+        <p><b>题目：</b>${q.question}</p>
+        ${q.options.map((opt, idx) => {
+          const key = ["A", "B", "C", "D"][idx];
+          return `<label class="opt"><input type="radio" name="ans" value="${key}" /> ${key}. ${opt}</label>`;
+        }).join("")}
+        <button onclick="submitAnswer()">提交答案</button>
+        <pre id="answerResult" class="muted"></pre>
+      `;
+    }
+
+    async function submitAnswer() {
+      if (!currentQuestion) return;
+      const userId = document.getElementById("userId").value.trim();
+      const checked = document.querySelector("input[name='ans']:checked");
+      if (!checked) return alert("请选择答案");
+      const answer = checked.value;
+
+      const res = await fetch(`${API_BASE}/answer`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: userId,
+          question_id: currentQuestion.id,
+          answer
+        })
+      });
+      const data = await res.json();
+      document.getElementById("answerResult").textContent =
+        `答题结果: ${data.correct ? "正确" : "错误"}\n当前掌握度: ${data.mastery}`;
+    }
+  </script>
+</body>
+</html>
+

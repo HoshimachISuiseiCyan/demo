@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>Denpa 智能刷题系统</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app">
+
+    <!-- 顶栏 -->
+    <header class="header">
+        <h1>⚡ Denpa</h1>
+        <button id="newBankBtn">＋ 新题库</button>
+    </header>
+
+    <!-- 左侧题库 -->
+    <aside class="sidebar">
+        <h3>题库</h3>
+        <ul id="bankList"></ul>
+    </aside>
+
+    <!-- 主区域 -->
+    <main class="main">
+
+        <!-- 上传 -->
+        <div class="card">
+            <h2>上传学习内容</h2>
+            <textarea id="inputText" placeholder="粘贴教材/笔记..."></textarea>
+            <button id="uploadBtn">生成题目</button>
+        </div>
+
+        <!-- 题目 -->
+        <div id="questionBox" class="card hidden"></div>
+
+    </main>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

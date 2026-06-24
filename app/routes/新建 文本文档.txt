@@ -1,0 +1,20 @@
+app/
+├── main.py                 # FastAPI入口
+├── core/
+│   └── services.py        # 初始化LLM/Embedding（刚才写的）
+│
+├── models/
+│   ├── database.py        # SQLAlchemy表（Knowledge等）
+│   ├── schemas.py         # Pydantic模型（ConceptRead等）
+│
+├── services/              # 👉 AI核心层（你写的都放这里）
+│   ├── knowledge_extractor.py
+│   ├── question_generator.py
+│   ├── evaluator.py
+│   ├── embedding_service.py
+│   └── llm_service.py
+│
+├── routes/                # 👉 API层
+│   ├── ai.py              # AI接口（新建）
+│   ├── practice.py        # 做题/评估接口（新建）
+│   └── __init__.py
