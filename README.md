@@ -1,86 +1,432 @@
-# Denpa AI Learning System (MVP)
+# Denpa AI Learning System
 
-基于 Transformer/LLM 的智能学习系统后端，包含三个核心模块：
+☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆
+demo版如何启动：
+1. 双击start.bat。若需要按任意键前进则照做。
+2. 前往http://localhost:5173/
+3. 选择“考试模式”或“拓展模式”后，在“学习内容输入”窗口粘粘你想学习的内容。
+4. 点击“生成题目”
+*demo版生成题目可能需要等待较长时间。每次生成5题，可以反复点击按钮生成更多。
+*示例学习内容，可供尝试：
 
-1. 知识抽取（Knowledge Extraction）
-2. 客观题生成（Question Generation，单选题）
-3. 学习评估（Learning Evaluation，自适应掌握度）
+引用的语法：引用 = 给一个变量起的「别名」，原变量有自己的名字，引用是它的第二个名字；操作引用 等价于 操作变量本身；核心符号：&，和「取地址符」是同一个符号，但含义完全不同：在指针里是「取地址」，在引用里是「声明引用」。写法，数据类型 &引用名 = 原变量名; & 在这里是「引用标识符」，不是取地址，就表示这是一个引用；引用的数据类型 必须和「原变量」完全一致；✔️ 最核心要求：引用定义时，必须立刻初始化绑定原变量，不能先定义再赋值！
+引用的特性：✔️ 特性 1：引用 必须初始化。✔️ 特性 2：引用 一旦绑定原变量，终身不可更换绑定对象。✔️ 特性 3：引用和原变量 共享同一块内存空间。
+引用的本质：C++ 中，引用的本质 = 编译器自动处理的「常量指针」 → 数据类型* const 指针比如 int &b = a，编译器底层等价处理为：int* const p = &a; 常量指针 int* const p 的特性：指针的地址不能修改 → 对应引用「不能更换绑定对象」；编译器会自动对这个常量指针做「解引用操作」，程序员不用手动写*p，直接用p就行 → 对应引用「语法简洁，像普通变量一样使用」；程序员层面：不用管指针，只需要把引用当成「变量别名」使用即可，编译器帮我们做了所有指针相关的操作。引用 = 「语法糖包装的常量指针」，保留了指针的高效率，又去掉了指针的复杂语法和野指针风险，比指针更安全、更好用。
 
-## 1. 项目结构
+引用作为传参：这是引用最常用、最重要的用法，没有之一！C++ 中，引用传参 几乎完全替代了 指针传参，是 C++ 的核心编程习惯。值传递：传变量的拷贝 → 函数内改性，实参不变 → 效率低、不能改性；指针传参：传变量的地址 → 函数内改性，实参变 → 效率高、但语法繁琐（要写 &/*）、有野指针风险；引用传参：传变量本身 → 函数内改性，实参变 → 效率高、语法简洁、无任何风险 ✔️。// 值传递：不能改性 void fun1(int a) { a=100; } // 指针传参：能改性，语法繁琐 void fun2(int *a) { *a=100; } // 引用传参：能改性，语法极简 ✔️ void fun3(int &a) { a=100; }
+引用作为返回值：返回值类型& 函数名(参数列表) { 函数体; return 变量名; // 返回变量本身，不是值的拷贝 } ；核心优点：函数返回引用时，不会产生返回值的拷贝，直接返回变量本身，效率极高；并且返回的引用可以直接作为「左值」赋值，这个特性是普通返回值做不到的。和「指针不能返回栈区地址」完全一样 → 引用绝对不能返回「栈区局部变量」的引用！返回的变量只要在函数结束后，内存不释放，就可以返回引用：
+常量引用：常量引用 = 被 const 修饰的引用，语法加一个const即可，作用是：保护引用指向的变量，不被修改。// 写法1：绑定普通变量，变量值不能通过引用修改； const 数据类型 &引用名 = 原变量名; // 写法2：直接绑定常量（普通引用做不到！）； const 数据类型 &引用名 = 常量值; ✔️ 特性 1：不能通过常量引用 修改原变量的值  ✔️ 特性 2：常量引用 可以直接绑定「常量值」，普通引用不行 ✔️ 特性 3：函数传参用常量引用 → C++ 的【最佳传参方式】
+
+☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆
+
+## 项目简介
+
+Denpa AI Learning System（电波智能学习系统）是一款基于人工智能技术的智能学习辅助平台。
+
+用户只需输入教材内容、课堂笔记、PPT、考试重点或学习资料，系统即可自动分析知识点，并利用大语言模型生成高质量练习题，帮助用户完成知识巩固与复习训练。
+
+项目旨在解决传统学习过程中：
+
+* 知识点整理耗时
+* 练习题获取困难
+* 复习效率低
+* 错题管理复杂
+
+等问题。
+
+---
+
+## 项目特色
+
+### AI自动出题
+
+输入学习内容后自动生成：
+
+* 单选题
+* 知识理解题
+* 概念辨析题
+* 考试风格题目
+
+---
+
+### 双学习模式
+
+#### 考试模式（Exam Mode）
+
+严格依据用户提供的学习资料出题。
+
+适用于：
+
+* 期末考试
+* 考研复习
+* 资格证考试
+
+---
+
+#### 拓展模式（Expand Mode）
+
+在知识点基础上进行延伸和应用。
+
+适用于：
+
+* 深度学习
+* 面试准备
+* 能力提升
+
+---
+
+### 智能题库管理
+
+支持：
+
+* 多题库创建
+* 题目分类管理
+* 学习进度统计
+
+---
+
+### 错题记录
+
+自动记录：
+
+* 用户答案
+* 正确答案
+* 错误次数
+
+方便后续强化训练。
+
+---
+
+## 技术架构
+
+### 前端
+
+* React
+* Vite
+* JavaScript
+* CSS3
+
+---
+
+### 后端
+
+* FastAPI
+* Python 3.13
+
+---
+
+### 数据库
+
+* SQLite
+
+---
+
+### AI模型
+
+当前支持：
+
+* Doubao Seed 2.0 Pro
+
+通过火山引擎 Ark API 调用。
+
+---
+
+## 项目结构
 
 ```text
-app/
-  ai_modules/
-    knowledge_extractor.py
-    question_generator.py
-    evaluator.py
-  services/
-    embedding_service.py
-    llm_service.py
-    vector_store.py
-  models/
-    database.py
-    schemas.py
-  routes/
-    api.py
-  utils/
-    text_splitter.py
-  dependencies.py
-  config.py
-  main.py
-frontend/
-  index.html
-requirements.txt
-.env.example
+Denpa
+│
+├── app
+│   ├── routes
+│   │   ├── ai.py
+│   │   └── practice.py
+│   │
+│   ├── services
+│   │   ├── llm_service.py
+│   │   ├── question_generator.py
+│   │   └── evaluator.py
+│   │
+│   ├── models
+│   │   └── database.py
+│   │
+│   ├── core
+│   │   └── services.py
+│   │
+│   ├── db.py
+│   └── main.py
+│
+├── frontend
+│   ├── src
+│   │   ├── pages
+│   │   │   └── Home.jsx
+│   │   ├── styles
+│   │   └── main.jsx
+│
+├── .env
+├── requirements.txt
+└── README.md
 ```
 
-## 2. 快速启动
+---
+
+## 环境要求
+
+### Python
+
+```bash
+Python >= 3.10
+```
+
+推荐：
+
+```bash
+Python 3.13
+```
+
+---
+
+### Node.js
+
+```bash
+Node.js >= 18
+```
+
+推荐：
+
+```bash
+Node.js 20+
+```
+
+---
+
+## 安装步骤
+
+### 1. 克隆项目
+
+```bash
+git clone https://github.com/yourname/Denpa.git
+
+cd Denpa
+```
+
+---
+
+### 2. 创建虚拟环境
 
 ```bash
 python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-copy .env.example .env
 ```
 
-建议在 `.env` 中至少设置：
+Windows：
 
-- `LLM_API_KEY`
-- `EMBEDDING_PROVIDER=sentence_transformer`（默认）
+```bash
+.venv\Scripts\activate
+```
 
-启动服务：
+Linux/Mac：
+
+```bash
+source .venv/bin/activate
+```
+
+---
+
+### 3. 安装后端依赖
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+### 4. 安装前端依赖
+
+```bash
+cd frontend
+
+npm install
+```
+
+---
+
+## 配置AI
+
+在项目根目录创建：
+
+```text
+.env
+```
+
+内容：
+
+```env
+LLM_API_KEY=你的API_KEY
+
+LLM_MODEL=doubao-seed-2-0-pro-260215
+
+LLM_BASE_URL=https://ark.cn-beijing.volces.com/api/v3
+
+EMBEDDING_MODEL=Y:/models/all-MiniLM-L6-v2
+```
+
+---
+
+## 启动项目
+
+### 启动后端
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
+访问：
+
+```text
+http://127.0.0.1:8000
+```
+
 接口文档：
 
-- `http://127.0.0.1:8000/docs`
+```text
+http://127.0.0.1:8000/docs
+```
 
-前端页面：
+---
 
-- 直接打开 `frontend/index.html`
+### 启动前端
 
-## 3. API
+```bash
+cd frontend
 
-- `POST /upload`：上传文本并抽取知识点
-- `GET /questions?user_id=xxx&limit=5`：获取自适应题目
-- `POST /answer`：提交答案并更新掌握度
+npm run dev
+```
 
-## 4. 关键设计点
+访问：
 
-- AI 模块与路由/UI 解耦，可独立替换
-- Embedding 服务可切换为 Sentence-BERT、API 或兜底实现
-- 向量层默认 FAISS，不可用时降级为内存向量库
-- 掌握度更新规则严格按需求：
-  - 正确：`mastery += (1 - mastery) * 0.3`
-  - 错误：`mastery *= 0.7`
+```text
+http://localhost:5173
+```
 
-## 5. 后续扩展建议
+---
 
-1. 增加本地 Transformer 推理服务（替换 LLMService）
-2. 引入 RAG 检索链路（知识点 + 题目联合召回）
-3. 增加更多题型（判断题、多选题）
-4. 引入 fine-tuning pipeline（离线数据回流）
+## API示例
+
+### AI生成题目
+
+POST
+
+```text
+/ai/ai/generate
+```
+
+请求：
+
+```json
+{
+  "text": "二分查找时间复杂度是 O(log n)",
+  "mode": "exam"
+}
+```
+
+返回：
+
+```json
+{
+  "questions": [
+    {
+      "id": "q-1",
+      "stem": "二分查找的时间复杂度是？",
+      "options": [
+        "O(log n)",
+        "O(n)",
+        "O(n²)",
+        "O(1)"
+      ],
+      "answer": "A"
+    }
+  ]
+}
+```
+
+---
+
+## 使用说明
+
+### 创建题库
+
+点击：
+
+```text
++ 新建题库
+```
+
+---
+
+### 输入学习内容
+
+例如：
+
+```text
+二分查找的时间复杂度是O(log n)
+
+二叉树是一种树形数据结构
+
+快速排序平均时间复杂度为O(nlogn)
+```
+
+---
+
+### 选择模式
+
+* 考试模式
+* 拓展模式
+
+---
+
+### 生成题目
+
+点击：
+
+```text
+生成题目
+```
+
+系统自动调用AI生成练习题。
+
+---
+
+### 开始练习
+
+* 选择答案
+* 提交答案
+* 查看解析
+* 进入下一题
+
+---
+
+## 后续规划
+
+未来计划新增：
+
+* AI简答题
+* AI编程题
+* 错题本系统
+* 间隔重复复习算法
+* 学习数据分析
+* 安卓APP
+* 微信小程序
+* 多模型支持（DeepSeek、Qwen、GPT）
+
+---
+
+## 作者
+
+Seina Stella
+
+Computer Science Student
+
+2026
+
+```
+```
 
